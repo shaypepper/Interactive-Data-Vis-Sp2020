@@ -32,3 +32,13 @@
   font-size: 0.8rem;
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
 }
+
+.man-row {
+  background-color: rgba(255, 200, 0, 0.1);
+  border-top: solid black 5px;
+}
+
+.woman-row {
+  background-color: rgba(0, 255, 200, 0.1);
+  margin-bottom: 10px;
+}

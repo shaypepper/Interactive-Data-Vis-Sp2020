@@ -18,7 +18,7 @@ d3.csv(
   thead
     .append("tr")
     .selectAll("th")
-    .data(data.columns.slice(1))
+    .data([...data.columns.slice(1), "Average"])
     .join("td")
     .text(d => {
       const allWords = d.split(" ");
@@ -33,16 +33,24 @@ d3.csv(
     .selectAll("tr")
     .data(data)
     .join("tr")
-    .style("background-color", ({ Gender: g }) =>
-      g === "men" ? "rgba(255,200, 0, 0.1)" : "rgba(0,255, 200, 0.1)"
-    );
+    .attr("class", ({ Gender: g }) => (g === "men" ? "man-row" : "woman-row"));
 
   // cells
   rows
     .selectAll("td")
     .data(d => {
       delete d["Series ID"];
-      return Object.values(d);
+      const [avg, ct] = Object.keys(d).reduce(
+        (memo, key) => {
+          if (+d[key]) {
+            return [memo[0] + Math.round(+d[key] * 100), memo[1] + 1];
+          } else {
+            return memo;
+          }
+        },
+        [0, 0]
+      );
+      return [...Object.values(d), Math.round(avg / ct) / 100];
     })
     .join("td")
     // update the below logic to apply to your dataset
