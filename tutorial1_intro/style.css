@@ -13,6 +13,21 @@
   min-width: 35px;
 }
 
+body > p {
+  width: 225px;
+  float: right;
+}
+
+body > p:nth-child(2)::before {
+  content: url(icons/up.svg);
+  transform: rotate(180deg);
+  display: inline-block;
+}
+
+body > p:nth-child(3)::before {
+  content: url(icons/down.svg);
+}
+
 .value::after {
   font-size: 8px;
   float: right;
