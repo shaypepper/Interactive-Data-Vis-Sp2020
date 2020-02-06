@@ -66,7 +66,7 @@ d3.csv(
       return d;
     })
     .attr("class", (d, i, data) => {
-      if (!i) {
+      if (i < 2 || i === data.length - 1) {
         return;
       }
       let prevValue = +data[i - 1].innerHTML;
