@@ -10,20 +10,13 @@ d3.csv(
 
   /** HEADER */
   const thead = table.append("thead");
-  thead
-    .append("tr")
-    .append("th")
-    .attr("colspan", "7");
 
   thead
     .append("tr")
     .selectAll("th")
     .data([...data.columns.slice(1), "Average"])
     .join("td")
-    .text(d => {
-      const allWords = d.split(" ");
-      return allWords[0] === "Annual" ? allWords[1] : d;
-    })
+    .text(formatHeading)
     .attr("class", "headings");
 
   /** BODY */
@@ -33,50 +26,85 @@ d3.csv(
     .selectAll("tr")
     .data(data)
     .join("tr")
-    .attr("class", ({ Gender: g }) => (g === "men" ? "man-row" : "woman-row"));
+    .attr("class", getClassByGender);
 
   // cells
   rows
     .selectAll("td")
     .data(d => {
       delete d["Series ID"];
-      const [avg, ct] = Object.keys(d).reduce(
-        (memo, key) => {
-          if (+d[key]) {
-            return [memo[0] + Math.round(+d[key] * 100), memo[1] + 1];
-          } else {
-            return memo;
-          }
-        },
-        [0, 0]
-      );
-      return [...Object.values(d), Math.round(avg / ct) / 100];
+      const avg = calculateAverage(d);
+      return [...Object.values(d), avg];
     })
     .join("td")
     // update the below logic to apply to your dataset
-    .style("background-color", d => !NaN && `rgba(0,0,0,${+d / 10})`)
-    .style("color", d => !NaN && +d > 5 && "white")
-    .text((d, i) => {
-      if (!i) {
-        return d.toUpperCase();
-      }
-      if (i == 1) {
-        return d.split(" (")[0];
-      }
-      return d;
-    })
-    .attr("class", (d, i, data) => {
-      if (i < 2 || i === data.length - 1) {
-        return;
-      }
-      let prevValue = +data[i - 1].innerHTML;
-      if (+d > prevValue) {
-        return "up value";
-      }
-      if (+d < prevValue) {
-        return "down value";
-      }
-
-      return +d && "value";
-    });
+    .style("background-color", setBackgroundColorByValue)
+    .style("color", setTextColorByValue)
+    .text(formatCellText)
+    .attr("class", applyClassesToTableValues);
 });
+
+// Functions
+
+function calculateAverage(d) {
+  const [total, ct] = Object.keys(d).reduce(
+    (memo, key) => {
+      if (+d[key]) {
+        return [memo[0] + Math.round(+d[key] * 100), memo[1] + 1];
+      } else {
+        return memo;
+      }
+    },
+    [0, 0]
+  );
+
+  return Math.round(total / ct) / 100;
+}
+
+function removeTravelInfo(d) {
+  return d.split(" (")[0];
+}
+
+function formatHeading(d) {
+  const allWords = d.split(" ");
+  return allWords[0] === "Annual" ? allWords[1] : d;
+}
+
+function getClassByGender({ Gender: g }) {
+  return g === "men" ? "man-row" : "woman-row";
+}
+
+function setBackgroundColorByValue(d) {
+  return !NaN && `rgba(0,0,0,${+d / 10})`;
+}
+
+function setTextColorByValue(d) {
+  return !NaN && +d > 5 && "white";
+}
+
+function formatCellText(d, i) {
+  if (!i) {
+    // Gender column, use all caps
+    return d.toUpperCase();
+  }
+  if (i == 1) {
+    // Categories, make more concise
+    return removeTravelInfo(d);
+  }
+  return d;
+}
+
+function applyClassesToTableValues(d, i, data) {
+  if (i < 2 || i === data.length - 1) {
+    return;
+  }
+  let prevValue = +data[i - 1].innerHTML;
+  if (+d > prevValue) {
+    return "up value";
+  }
+  if (+d < prevValue) {
+    return "down value";
+  }
+
+  return +d && "value";
+}
