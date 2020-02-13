@@ -15,13 +15,13 @@ d3.csv("../../data/squirrelActivities.csv", d3.autoType).then(data => {
   const xScale = d3
     .scaleBand()
     .domain(data.map(d => d.activity))
-    .range([margin.left, width - margin.right])
+    .range([margin.bottom, width - margin.top])
     .paddingInner(paddingInner);
 
   const yScale = d3
     .scaleLinear()
     .domain([0, d3.max(data, d => d.count)])
-    .range([height - margin.bottom, margin.top]);
+    .range([height - margin.left, margin.right]);
 
   // reference for d3.axis: https://github.com/d3/d3-axis
   const xAxis = d3.axisBottom(xScale).ticks(data.length);
@@ -42,7 +42,7 @@ d3.csv("../../data/squirrelActivities.csv", d3.autoType).then(data => {
     .attr("x", d => xScale(d.activity))
     .attr("width", xScale.bandwidth())
     .attr("height", d => height - margin.bottom - yScale(d.count))
-    .attr("fill", "steelblue")
+    .attr("fill", "steelblue");
 
   // append text
   const text = svg
@@ -51,7 +51,7 @@ d3.csv("../../data/squirrelActivities.csv", d3.autoType).then(data => {
     .join("text")
     .attr("class", "label")
     // this allows us to position the text in the center of the bar
-    .attr("x", d => xScale(d.activity) + (xScale.bandwidth() / 2))
+    .attr("x", d => xScale(d.activity) + xScale.bandwidth() / 2)
     .attr("y", d => yScale(d.count))
     .text(d => d.count)
     .attr("dy", "1.25em");
