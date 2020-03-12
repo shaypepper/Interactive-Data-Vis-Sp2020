@@ -95,39 +95,32 @@ function init() {
     .attr("fill-opacity", d => {
       return d.depth === 2 ? 0.7 : 0.4;
     });
-  leaf
-    .on("mouseenter", function(d) {
-      if (d.depth !== 2) {
-        state.hover = null;
-        draw();
-        return;
-      }
-      d3.select(this).attr("fill-opacity", "1");
-      state.hover = {
-        translate: [
-          // center top left corner of the tooltip in center of tile
-          d.x * height,
-          d.y * height
-        ],
-        genre: d.data[1].movies[0].genre,
-        rating: d.data[1].movies[0].rating,
-        value: d.value,
-        movieList: d.data[1].movies.map(m => m.title),
-        color: colorScale(d.data[1].movies[0].genre)
-      };
+  leaf.on("mouseenter", function(d) {
+    if (d.depth !== 2) {
+      state.hover = null;
       draw();
-    })
-    .on("mouseleave", function(d) {
-      if (d.depth === 2) d3.select(this).attr("fill-opacity", "0.7");
-    });
+      return;
+    }
+    state.hover = {
+      translate: [
+        // center top left corner of the tooltip in center of tile
+        d.x * height,
+        d.y * height
+      ],
+      genre: d.data[1].movies[0].genre,
+      rating: d.data[1].movies[0].rating,
+      value: d.value,
+      movieList: d.data[1].movies.map(m => m.title),
+      color: colorScale(d.data[1].movies[0].genre)
+    };
+    draw();
+  });
 
   leaf
     .append("text")
     .html(d => {
       if (d.depth === 2 && d.value > 100) return d.data[0].toUpperCase();
-      // if (d.depth === 1) return "hey";
     })
-    // .attr("text-anchor", "right")
     .attr("fill", "white")
     .attr("font-size", d => (d.r * height) / 2.5)
     .attr("width", d => d.r * 2 * height)
