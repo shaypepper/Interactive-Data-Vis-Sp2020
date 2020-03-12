@@ -1,0 +1,50 @@
+#d3-container {
+  position: relative;
+}
+
+.tooltip {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
+  padding: 5px;
+  width: 125px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-shadow: white 0px 0px 10px;
+}
+
+li {
+  border-radius: 3px;
+  padding: 8px;
+  color: black;
+  text-shadow: 0px 0px 1px #fff;
+  text-transform: uppercase;
+  font-weight: lighter;
+  list-style-type: none;
+  display: inline-block;
+  margin: 3px;
+  font-size: 10px;
+}
+
+li:first-child {
+  height: 45vh;
+  width: 52vh;
+  float: left;
+  -webkit-shape-outside: circle();
+  shape-outside: circle();
+}
+
+ul {
+  top: 0;
+  position: absolute;
+  z-index: -1000;
+  padding: 0 20px 0 0;
+}
+
+svg {
+  margin-left: auto;
+}
+
+body * {
+  font-family: Helvetica, Arial, sans-serif;
+}

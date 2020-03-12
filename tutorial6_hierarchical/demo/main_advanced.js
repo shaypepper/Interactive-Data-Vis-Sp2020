@@ -11,7 +11,7 @@ let svg;
  * APPLICATION STATE
  * */
 let state = {
-  root: null,
+  root: null
 };
 
 /**
@@ -19,6 +19,7 @@ let state = {
  * */
 d3.csv("../../data/netflix_titles_with_genre.csv", d3.autotype).then(data => {
   state.data = data;
+  console.log(state);
   init();
 });
 
@@ -95,14 +96,14 @@ function init() {
         translate: [
           // center tooltip in rect
           d.x0 + (d.x1 - d.x0) / 2,
-          d.y0 + (d.y1 - d.y0) / 2,
+          d.y0 + (d.y1 - d.y0) / 2
         ],
         name: d
           .ancestors()
           .reverse()
           .map(d => d.data[0])
           .join("/"),
-        value: d.value,
+        value: d.value
       };
       draw();
     });

@@ -14,14 +14,16 @@ let tooltip;
 let state = {
   data: null,
   hover: null,
-  mousePosition: null,
+  mousePosition: null
 };
+console.log("state!", state);
 
 /**
  * LOAD DATA
  * */
 d3.json("../../data/flare.json", d3.autotype).then(data => {
   state.data = data;
+  console.log(state);
   init();
 });
 
@@ -82,7 +84,7 @@ function init() {
         translate: [
           // center top left corner of the tooltip in center of tile
           d.x0 + (d.x1 - d.x0) / 2,
-          d.y0 + (d.y1 - d.y0) / 2,
+          d.y0 + (d.y1 - d.y0) / 2
         ],
         name: d.data.name,
         value: d.data.value,
@@ -90,7 +92,7 @@ function init() {
           .ancestors()
           .reverse()
           .map(d => d.data.name)
-          .join("/")}`,
+          .join("/")}`
       };
       draw();
     });
