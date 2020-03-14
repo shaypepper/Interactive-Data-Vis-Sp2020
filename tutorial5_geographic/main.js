@@ -16,7 +16,7 @@ let svg, projection, counties, path, genderDropdown, raceDropdown;
 let state = {
   // + SET UP STATE
   gender: "total",
-  raceEthnicity: "total",
+  raceEthnicity: "hispanic",
   denominator: "total",
   hover: {}
 };
@@ -106,27 +106,12 @@ Promise.all([
  * */
 function init() {
   // define and populate dropdowns
-  genderDropdown = d3.select("#gender-dropdown");
-  state.genders.forEach(gender => {
-    genderDropdown
-      .append("option")
-      .attr("value", gender)
-      .attr("selected", gender === state.gender || undefined)
-      .html(gender);
-  });
-
-  genderDropdown.on("change", function() {
-    state.gender = genderDropdown.node().value;
-    draw();
-  });
-  raceDropdown = d3.select("#race-dropdown");
-  state.raceEthnicities.forEach(raceEthnicity => {
-    raceDropdown
-      .append("option")
-      .attr("value", raceEthnicity)
-      .attr("selected", raceEthnicity === state.raceEthnicity)
-      .html(raceEthnicity);
-  });
+  populateDropdown(d3.select("#gender-dropdown"), state.genders, "gender");
+  populateDropdown(
+    d3.select("#race-dropdown"),
+    state.raceEthnicities,
+    "raceEthnicity"
+  );
 
   // create an svg element in our main `d3-container` element
   svg = d3
@@ -138,20 +123,6 @@ function init() {
   // + SET UP PROJECTION
   projection = d3.geoAlbersUsa().fitSize([width, height], state.geojson);
   path = d3.geoPath().projection(projection);
-  // + SET UP GEOPATH
-
-  counties = svg
-    .selectAll(".county")
-    // all of the features of the geojson, meaning all the states as individuals
-    .data(state.geojson.features, d => {
-      Object.assign(d.properties, {
-        demoData: state.data[d.properties.COUNTY.toUpperCase()]
-      });
-      return d;
-    });
-
-  // + DRAW BASE MAP PATH
-  // + ADD EVENT LISTENERS (if you want)
 
   draw(); // calls the draw function
 }
@@ -161,28 +132,73 @@ function init() {
  * we call this everytime there is an update to the data/state
  * */
 function draw() {
-  counties
-    .join("path")
-    .attr("d", path)
-    .attr("class", "county")
-    .attr("fill", d => {
-      let {
-        properties: { demoData }
-      } = d;
+  const geojsonWithValues = state.geojson.features.map(d => d);
+  svg
+    .selectAll(".county")
+    // all of the features of the geojson, meaning all the states as individuals
+    .data(geojsonWithValues, d => d.properties.COUNTY.toUpperCase())
+    .join(
+      enter => {
+        enter
+          .append("path")
+          .attr("d", path)
+          .attr("class", "county")
+          .attr("fill", "white")
+          .on("mouseover", d => {
+            // when the mouse rolls over this feature, do this
+            state.hover.county = d.properties.COUNTY;
+            draw(); // re-call the draw function when we set a new hoveredState
+          })
+          .call(enter => {
+            enter
+              .transition()
+              .delay(calculateDelay)
+              .duration(700)
+              .attr("fill", calculateFill)
+              .attr("stroke", "gainsboro");
+          });
+      },
+      update => {
+        update
+          .transition()
+          .delay(calculateDelay)
+          .duration(500)
+          .attr("fill", calculateFill);
+      },
+      exit => {}
+    );
+}
 
-      if (!demoData) return;
-      let v =
-        demoData[state.gender][state.raceEthnicity].total /
-        // state.data["STATE OF TEXAS"].total.total.total;
-        demoData.total.total.total;
+function calculateFill(d) {
+  const demoData = state.data[d.properties.COUNTY.toUpperCase()];
+  if (!demoData) return "white";
+  let v =
+    demoData[state.gender][state.raceEthnicity].total /
+    demoData.total.total.total;
 
-      return d3.interpolateBlues(v);
-    })
-    .attr("stroke", "gainsboro")
-    .on("mouseenter", d => {
-      // when the mouse rolls over this feature, do this
-      state.hover.county = d.properties.COUNTY;
-      console.log(state.hover.county);
-      draw(); // re-call the draw function when we set a new hoveredState
-    });
+  return d3.interpolateBlues(v);
+}
+
+function calculateDelay(d) {
+  let [x, y] = d.geometry.coordinates[0][0];
+  // Sometimes the numbers you wants are nested one further than expected...
+  if (typeof x !== "number") {
+    [x, y] = x;
+  }
+
+  return (x - y + 150 + Math.random() * 5) * 12 || 800;
+}
+
+function populateDropdown(selectEl, optionValues, stateKey) {
+  optionValues.forEach(item => {
+    selectEl
+      .append("option")
+      .attr("value", item)
+      .attr("selected", item === state[stateKey] || undefined)
+      .html(item);
+  });
+  selectEl.on("change", function() {
+    state[stateKey] = selectEl.node().value;
+    draw();
+  });
 }
