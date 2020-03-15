@@ -1,0 +1,22 @@
+select {
+  padding: 10px;
+  font-size: 14px;
+  float: right;
+}
+
+.tooltip {
+  border-radius: 3px;
+  padding: 15px;
+  width: 30%;
+  height: 7em;
+  position: absolute;
+}
+
+* {
+  font-family: Helvetica, Arial, sans-serif;
+  color: #555555;
+}
+
+body {
+  font-size: 14px;
+}

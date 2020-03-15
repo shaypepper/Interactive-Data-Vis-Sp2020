@@ -5,12 +5,19 @@
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
-    Gender:
-    <select id="gender-dropdown"></select>
-    Race: 
-    <select id="race-dropdown"></select>
-    Denominator: 
-    <select id="denominator-dropdown"></select>
+    <h1>Populations by race and gender in Texas counties</h1>
+    <div class="top-bar">
+      <div class="tooltip">
+        <h3>Hover over counties to see their break downs.</h3>
+        <table></table>
+      </div>
+      <div id="gender-dropdown-container">
+
+      </div>
+      <div id="race-dropdown-container">
+
+      </div>
+    </div>
 
     <div id="d3-container"> </div>
     <script src="../lib/d3.js"></script>

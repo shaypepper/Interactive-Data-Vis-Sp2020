@@ -8,17 +8,35 @@ const width = window.innerWidth * 0.9,
 /** these variables allow us to access anything we manipulate in
  * init() but need access to in draw().
  * All these variables are empty before we assign something to them.*/
-let svg, projection, counties, path, genderDropdown, raceDropdown;
+let svg, projection, counties, path, genderDropdown, raceDropdown, infoBox;
 
 /**
  * APPLICATION STATE
  * */
 let state = {
   // + SET UP STATE
-  gender: "total",
-  raceEthnicity: "hispanic",
-  denominator: "total",
-  hover: {}
+  geojson: null,
+  data: null,
+  genders: null,
+  raceEthnicities: null,
+
+  hover: {
+    county: null,
+    total: null,
+    rawNumber: null,
+    percentage: null,
+    selected: false
+  },
+
+  selection: {
+    gender: "total",
+    raceEthnicity: "hispanic",
+    county: null
+  },
+
+  // I wrote my transform function so that if I had the time, I could change denominators.
+  // I also wanted to do a slider for ages. Let's see how the rest of these tutorials go.
+  denominator: "total"
 };
 
 /**
@@ -39,27 +57,14 @@ Promise.all([
   state.raceEthnicities = new Set(keys.map(k => k.toLowerCase().split(" ")[0]));
 
   data.forEach(d => {
-    var countyData =
-      state.data[d.County] ||
-      (state.data[d.County] = {
-        name: d.County
-      });
+    var countyData = (state.data[d.County] = state.data[d.County] || {});
 
     keys.forEach(key => {
       let [raceEthnicity, gender] = key.toLowerCase().split(" ");
       gender = gender || "total";
 
-      let age;
-      switch (d.Age) {
-        case "< 1 Year":
-          age = 0;
-          break;
-        case "All Ages":
-          age = "total";
-          break;
-        default:
-          age = +d.Age.split(" ")[0];
-      }
+      let age =
+        { "< 1 Year": 0, "All Ages": "total" }[d.Age] || +d.Age.split(" ")[0];
 
       countyData[gender] = countyData[gender] || {};
       countyData[gender][raceEthnicity] =
@@ -106,9 +111,13 @@ Promise.all([
  * */
 function init() {
   // define and populate dropdowns
-  populateDropdown(d3.select("#gender-dropdown"), state.genders, "gender");
   populateDropdown(
-    d3.select("#race-dropdown"),
+    d3.select("#gender-dropdown-container"),
+    state.genders,
+    "gender"
+  );
+  populateDropdown(
+    d3.select("#race-dropdown-container"),
     state.raceEthnicities,
     "raceEthnicity"
   );
@@ -132,11 +141,10 @@ function init() {
  * we call this everytime there is an update to the data/state
  * */
 function draw() {
-  const geojsonWithValues = state.geojson.features.map(d => d);
   svg
     .selectAll(".county")
     // all of the features of the geojson, meaning all the states as individuals
-    .data(geojsonWithValues, d => d.properties.COUNTY.toUpperCase())
+    .data(state.geojson.features, d => d.properties.COUNTY.toUpperCase())
     .join(
       enter => {
         enter
@@ -144,39 +152,76 @@ function draw() {
           .attr("d", path)
           .attr("class", "county")
           .attr("fill", "white")
-          .on("mouseover", d => {
-            // when the mouse rolls over this feature, do this
-            state.hover.county = d.properties.COUNTY;
-            draw(); // re-call the draw function when we set a new hoveredState
+          .on("mouseenter", d => {
+            // Disable tooltip update until a deseltion or a new selection
+            const { COUNTY: county } = d.properties;
+            const { county: hoverCounty, selected } = state.hover;
+            if (selected && hoverCounty !== county) return;
+
+            recalculateHoverState(county);
+            updateTooltip();
+            // draw(); // re-call the draw function when we set a new hoveredState
+          })
+          .on("mouseleave", d => {
+            if (state.hover.selected) return;
+            const { COUNTY: county } = d.properties;
+            state.hover = {};
+            updateTooltip();
+          })
+          .on("click", d => {
+            const { COUNTY: county } = d.properties;
+            const { county: hoverCounty, selected } = state.hover;
+            // make current county the selection, unless it's already selected. In that case deselect.
+            if (hoverCounty === county) {
+              state.hover.selected = !selected;
+            } else {
+              recalculateHoverState(county, true);
+              updateTooltip();
+            }
+            draw();
           })
           .call(enter => {
             enter
               .transition()
               .delay(calculateDelay)
-              .duration(700)
+              .duration(300)
               .attr("fill", calculateFill)
-              .attr("stroke", "gainsboro");
+              .attr("stroke", calculateStroke);
           });
       },
       update => {
         update
           .transition()
           .delay(calculateDelay)
-          .duration(500)
-          .attr("fill", calculateFill);
+          .duration(300)
+          .attr("fill", calculateFill)
+          .attr("stroke", calculateStroke);
       },
       exit => {}
     );
 }
 
 function calculateFill(d) {
-  const demoData = state.data[d.properties.COUNTY.toUpperCase()];
-  if (!demoData) return "white";
-  let v =
-    demoData[state.gender][state.raceEthnicity].total /
-    demoData.total.total.total;
+  const {
+    properties: { COUNTY: county }
+  } = d;
+  const {
+    selection: { raceEthnicity, gender },
+    data,
+    hover: { selected, county: hoverCounty }
+  } = state;
+  const demoData = data[county.toUpperCase()];
 
-  return d3.interpolateBlues(v);
+  if (county === hoverCounty && selected) return "firebrick";
+  if (!demoData) return "white";
+
+  let v = demoData[gender][raceEthnicity].total / demoData.total.total.total;
+  // if there is a selected county, shading should be altered for unselected counties
+  return d3.interpolateBlues(selected ? v / 3 : v);
+}
+
+function calculateStroke() {
+  return state.hover.selected ? "rgb(250,250,250)" : "rgb(220,220,220)";
 }
 
 function calculateDelay(d) {
@@ -186,19 +231,67 @@ function calculateDelay(d) {
     [x, y] = x;
   }
 
+  // I know this math looks crazy but that's just because it is.
+  // I wanted a sort of popcorn effect that sweeps from the top left corner to the bottom right.
   return (x - y + 150 + Math.random() * 5) * 12 || 800;
 }
 
-function populateDropdown(selectEl, optionValues, stateKey) {
+function recalculateHoverState(county = state.hover.county) {
+  const { raceEthnicity, gender } = state.selection;
+
+  const demoData = state.data[(county || "").toUpperCase()];
+  let total = demoData && demoData.total.total.total;
+  let rawNumber = demoData && demoData[gender][raceEthnicity].total;
+
+  state.hover = {
+    county,
+    total,
+    rawNumber,
+    percentage: rawNumber / total,
+    selected: state.hover.selected
+  };
+}
+
+function populateDropdown(container, optionValues, stateKey) {
+  const selectEl = container.append("select");
   optionValues.forEach(item => {
+    if (!item) return;
     selectEl
       .append("option")
       .attr("value", item)
       .attr("selected", item === state[stateKey] || undefined)
-      .html(item);
+      .html(`${stateKey}: ${item}`);
   });
   selectEl.on("change", function() {
-    state[stateKey] = selectEl.node().value;
+    state.selection[stateKey] = selectEl.node().value;
+    recalculateHoverState();
+    updateTooltip();
     draw();
   });
+}
+
+function updateTooltip() {
+  const {
+    selection: { gender, raceEthnicity },
+    hover: { county, percentage, rawNumber, total }
+  } = state;
+
+  if (!county) {
+    return d3.select(".tooltip > h3").html("");
+  }
+
+  const nSelections = (raceEthnicity !== "total") + (gender !== "total");
+  let selectionText = "human";
+  if (nSelections == 2) {
+    selectionText = `${raceEthnicity} and ${gender}`;
+  } else if (nSelections == 1) {
+    selectionText = raceEthnicity === "total" ? gender : raceEthnicity;
+  }
+
+  d3.select(".tooltip > h3").html(
+    `${county}  <br />
+    ${d3.format(",")(total)} residents <br />
+    ${d3.format(".2%")(percentage)} (${d3.format(",")(rawNumber)})
+     are ${selectionText}`
+  );
 }
