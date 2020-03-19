@@ -20,14 +20,17 @@ this extrapolated function allows us to replace the "G" with "B" min the case of
 we cannot do this in the .tickFormat() because we need to pass a function as an argument, 
 and replace needs to act on the text (result of the function). 
 */
-const formatBillions = (num) => d3.format(".2s")(num).replace(/G/, 'B')
+const formatBillions = num =>
+  d3
+    .format(".2s")(num)
+    .replace(/G/, "B");
 
 /**
  * APPLICATION STATE
  * */
 let state = {
   data: [],
-  selectedCountry: null,
+  selectedCountry: null
 };
 
 /**
@@ -36,7 +39,7 @@ let state = {
 d3.csv("../../data/populationOverTime.csv", d => ({
   year: new Date(d.Year, 0, 1),
   country: d.Entity,
-  population: +d.Population,
+  population: +d.Population
 })).then(raw_data => {
   console.log("raw_data", raw_data);
   state.data = raw_data;
@@ -77,7 +80,7 @@ function init() {
     .selectAll("option")
     .data([
       ...Array.from(new Set(state.data.map(d => d.country))),
-      default_selection,
+      default_selection
     ])
     .join("option")
     .attr("value", d => d)
