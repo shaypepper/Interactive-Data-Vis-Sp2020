@@ -3,3 +3,9 @@
   fill: black;
   text-anchor: middle;
 }
+
+body > div {
+  padding: 50px;
+
+  background-image: url("../assets/img/waldopage.jpeg");
+}

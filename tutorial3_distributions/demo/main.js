@@ -18,7 +18,7 @@ let yScale;
  * */
 let state = {
   data: [],
-  selectedParty: "All",
+  selectedParty: "All"
 };
 
 /**
@@ -109,6 +109,7 @@ function init() {
  * we call this everytime there is an update to the data/state
  * */
 function draw() {
+  console.log("drawing");
   // filter the data for the selectedParty
   let filteredData = state.data;
   // if there is a selectedParty, filter the data before mapping it to our elements
@@ -126,13 +127,12 @@ function draw() {
           .append("circle")
           .attr("class", "dot") // Note: this is important so we can identify it in future updates
           .attr("stroke", "lightgrey")
-          .attr("opacity", 0.5)
+          .attr("opacity", 0.9)
           .attr("fill", d => {
             if (d.party === "D") return "blue";
             else if (d.party === "R") return "red";
             else return "purple";
           })
-          .attr("r", radius)
           .attr("cy", d => yScale(d.environmental_rating))
           .attr("cx", d => margin.left) // initial value - to be transitioned
           .call(enter =>
