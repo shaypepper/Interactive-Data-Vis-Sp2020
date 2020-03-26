@@ -16,17 +16,22 @@ let svg, projection, counties, path, genderDropdown, raceDropdown, infoBox;
 let state = {
   // + SET UP STATE
   geojson: null,
-  events: null
+  events: null,
+  locations: []
 };
 
 /**
  * LOAD DATA
  * Using a Promise.all([]), we can load more than one dataset at a time
  * */
-Promise.all([d3.json("../data/manhattan.geojson")]).then(([geojson, data]) => {
+Promise.all([
+  d3.json("../data/manhattan.geojson"),
+  d3.csv("../data/evening_hours_locations.csv", d3.autoType)
+]).then(([geojson, locations]) => {
   // + SET STATE WITH DATA
   state.geojson = geojson;
   state.data = {};
+  state.locations = locations;
 
   // SORT DATA BY PUBLISH DATE + EVENT DATE
 
@@ -119,4 +124,16 @@ function populateDropdown() {}
 
 function updateTooltip() {}
 
-function drawPoints() {}
+function drawPoints() {
+  svg
+    .selectAll("circle")
+    .data(state.locations)
+    .join("circle")
+    .attr("r", 20)
+    .attr("fill", "steelblue")
+    .attr("transform", d => {
+      console.log(d, projection);
+      const [x, y] = projection([d.long, d.lat]);
+      return `translate(${x}, ${y})`;
+    });
+}

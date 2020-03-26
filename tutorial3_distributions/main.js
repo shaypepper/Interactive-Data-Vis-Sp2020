@@ -25,7 +25,7 @@ let state = {
 /**
  * LOAD DATA
  * */
-d3.csv("../../data/wheres-waldo-locations.csv", d3.autoType).then(raw_data => {
+d3.csv("../data/wheres-waldo-locations.csv", d3.autoType).then(raw_data => {
   console.log("raw_data", raw_data);
   state.data = raw_data;
   state.books = [...new Set(raw_data.map(d => d.Book))].sort((a, b) => a - b);
