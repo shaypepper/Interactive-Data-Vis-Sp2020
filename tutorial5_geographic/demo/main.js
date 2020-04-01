@@ -19,8 +19,8 @@ let state = {
   hover: {
     latitude: null,
     longitude: null,
-    state: null,
-  },
+    state: null
+  }
 };
 
 /**
@@ -29,7 +29,7 @@ let state = {
  * */
 Promise.all([
   d3.json("../../data/usState.json"),
-  d3.csv("../../data/usHeatExtremes.csv", d3.autoType),
+  d3.csv("../../data/usHeatExtremes.csv", d3.autoType)
 ]).then(([geojson, extremes]) => {
   state.geojson = geojson;
   state.extremes = extremes;
@@ -64,7 +64,7 @@ function init() {
     .attr("fill", "transparent")
     .on("mouseover", d => {
       // when the mouse rolls over this feature, do this
-      state.hover["state"] = d.properties.NAME;
+      state.hover["neighborhood"] = d.properties.name;
       draw(); // re-call the draw function when we set a new hoveredState
     });
 
