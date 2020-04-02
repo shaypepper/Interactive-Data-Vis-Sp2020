@@ -1,17 +1,3 @@
-select {
-  padding: 10px;
-  font-size: 14px;
-  float: right;
-}
-
-.tooltip {
-  border-radius: 3px;
-  padding: 15px;
-  width: 30%;
-  height: 7em;
-  position: absolute;
-}
-
 * {
   font-family: Helvetica, Arial, sans-serif;
   color: #ff6361;
@@ -34,8 +20,8 @@ body {
 #tooltip {
   position: fixed;
   top: calc(20em + 150px);
-  right: 15vw;
-  width: 25vw;
+  right: 8vw;
+  width: 40vw;
 }
 
 #tooltip span {

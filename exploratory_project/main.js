@@ -2,7 +2,7 @@
  * CONSTANTS AND GLOBALS
  * */
 const width = window.innerWidth * 0.9,
-  mapWidth = width / 2,
+  mapWidth = width / 2.2,
   height = window.innerHeight * 0.7,
   margin = {
     top: 20,
@@ -157,13 +157,11 @@ function drawMap() {
         .append("path")
         .attr("d", path)
         .attr("class", "county")
-        // .attr("fill", "white")
         .attr("stroke-width", 1)
         .attr("stroke", "rgba(30,30,30)")
         .attr("opacity", 0.6)
         .call(enter => {
           enter.transition().duration(400);
-          // .attr("fill", "gainsboro");
         });
     });
 }
@@ -189,7 +187,7 @@ function drawBarChart() {
   const xScale = d3
     .scaleBand()
     .domain(articlesByPublishDate.map(getPublishDate))
-    .range([mapWidth, width]);
+    .range([mapWidth + 50, width - 50]);
 
   initBarChart = () => {};
 
