@@ -1,11 +1,19 @@
 /**
  * CONSTANTS AND GLOBALS
  * */
-const width = window.innerWidth * 0.7,
+const width = window.innerWidth * 0.9,
   mapWidth = width / 2,
   height = window.innerHeight * 0.8,
-  margin = { top: 20, bottom: 50, left: 60, right: 40 },
-  sevenDays = 604800000;
+  margin = {
+    top: 20,
+    bottom: 50,
+    left: window.innerWidth * 0.05,
+    right: window.innerWidth * 0.05
+  },
+  sevenDays = 604800000,
+  theme = {
+    mainColor: "yellow"
+  };
 
 /** these variables allow us to access anything we manipulate in
  * init() but need access to in draw().
@@ -19,7 +27,9 @@ let svg,
   infoBox,
   week,
   totalEvents,
-  playButton;
+  playButton,
+  drawXAxis,
+  drawBars;
 
 /**
  * APPLICATION STATE
@@ -32,12 +42,16 @@ let state = {
   hover: {
     latitude: null,
     longitude: null,
-    state: null
+    state: null,
+    date: "2013-11-17",
+    role: "end"
   },
-  startDate: new Date("2000-01-04"),
-  endDate: new Date("2016-06-12"),
-  currentDate: new Date("2016-06-12"),
-  playSpeed: 200
+  startDate: "2004-06-20",
+  endDate: "2009-07-18",
+  currentDate: "2016-06-12",
+  playSpeed: 200,
+  playMode: false,
+  editingSelection: false
 };
 
 /**
@@ -46,7 +60,7 @@ let state = {
  * */
 Promise.all([
   d3.json("../data/manhattan.geojson"),
-  d3.csv("../data/evening_hours.csv", d3.autoType),
+  d3.csv("../data/evening_hours.csv"),
   d3.csv(
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTP7a4JsTDRMneysdxbhILySZbJ0NtxKrJPuYkPhBvNMT74d4B_7Oazju2U3b9wAs-abuMVqHscNmFD/pub?gid=1601565251&single=true&output=csv",
     d3.autoType
@@ -117,27 +131,13 @@ function init() {
 
   week = d3.select("#week");
 
-  svg.on("mousemove", () => {
-    // we can use d3.mouse() to tell us the exact x and y positions of our cursor
-    const [mx, my] = d3.mouse(svg.node());
-    // projection can be inverted to return [lat, long] from [x, y] in pixels
-    const proj = projection.invert([mx, my]);
-    state.hover["longitude"] = proj[0];
-    state.hover["latitude"] = proj[1];
-    // drawMap();
-  });
-
-  // CREATE SLIDER
-  // CREATE LISTENER FOR SLIDER.
-
   // DRAW PLAY BUTTON
-
-  // CREATE HEIRARCHY BY PUBLISH DATE
 
   // MAP LOCATIONS TO LONG-LAT COORDINATES
 
   drawMap(); // Only needs to be done once probably
-  // drawPoints();
+  drawPoints();
+  drawBarChart();
 }
 
 /**
@@ -149,55 +149,119 @@ function drawMap() {
     .selectAll(".county")
     // all of the features of the geojson, meaning all the states as individuals
     .data(state.geojson.features, d => d)
-    .join(
-      enter => {
-        enter
-          .append("path")
-          .attr("d", path)
-          .attr("class", "county")
-          .attr("fill", "gainsboro")
-          .on("mouseenter", d => {
-            state.hover.neighborhood = d.properties.name;
-          })
-          .call(enter => {
-            enter
-              .transition()
-              .delay(calculateDelay)
-              .duration(300)
-              .attr("fill", calculateFill)
-              .attr("stroke", calculateStroke);
-          });
-      },
-      update => {
-        update
-          .transition()
-          .delay(calculateDelay)
-          .duration(300)
-          .attr("fill", calculateFill)
-          .attr("stroke", calculateStroke);
-      },
-      exit => {}
-    );
+    .join(enter => {
+      enter
+        .append("path")
+        .attr("d", path)
+        .attr("class", "county")
+        // .attr("fill", "white")
+        .attr("stroke-width", 1)
+        .attr("stroke", "rgba(30,30,30)")
+        .attr("opacity", 0.6)
+        .call(enter => {
+          enter.transition().duration(400);
+          // .attr("fill", "gainsboro");
+        });
+    });
 }
 
-function calculateFill(d) {
-  return "gainsboro";
+function drawBarChart() {
+  const barChart = svg.append("g");
+  let xAxis;
+  const barChartXOffset = 150;
+  const articlesByPublishDate = d3
+    .nest()
+    .key(d => d.publishDate)
+    .entries(state.articles);
+  const getPublishDate = d => d.key;
+  const publishDates = articlesByPublishDate.map(getPublishDate);
+  const getTickValues = () => {
+    return [state.startDate, state.endDate, state.hover.date];
+  };
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(articlesByPublishDate.map(d => d.values.length))])
+    .range([margin.top, height - margin.bottom]);
+  const xScale = d3
+    .scaleBand()
+    .domain(articlesByPublishDate.map(getPublishDate))
+    .range([mapWidth, width]);
+
+  initBarChart = () => {};
+
+  drawXAxis = () => {
+    xAxis = d3.axisBottom(xScale).tickValues(getTickValues());
+    d3.select("#barAxis")
+      .html("")
+      .attr("transform", `translate(0, ${barChartXOffset})`)
+      .call(xAxis);
+  };
+
+  drawBars = () => {
+    barChart
+      .selectAll("rect")
+      .data(articlesByPublishDate, d => d.key)
+      .join("rect")
+      .attr("x", d => xScale(getPublishDate(d)))
+      .attr("y", d =>
+        d.key === state.hover.date ? 0 : barChartXOffset - d.values.length * 10
+      )
+      .attr("height", d =>
+        d.key === state.hover.date ? barChartXOffset : d.values.length * 10
+      )
+      .attr("width", 1)
+      .attr("fill", d => {
+        return d.key === state.hover.date ? "red" : theme.mainColor;
+      })
+      .attr("opacity", d => {
+        return (!(d.key < state.startDate) && !(d.key > state.endDate)) ||
+          d.key === state.hover.date
+          ? 1
+          : 0.2;
+      })
+      .on("mouseenter", d => {
+        state.hover.date = d.key;
+        if (state.editingSelection) {
+          if (
+            state.hover.date > state.startDate &&
+            state.hover.role === "end"
+          ) {
+            state.endDate = state.hover.date;
+          }
+        }
+        drawXAxis();
+        drawBars();
+      });
+  };
+
+  barChart
+    .on("mousedown", () => {
+      state.startDate = state.hover.date;
+      state.endDate = state.hover.date;
+      state.editingSelection = true;
+      drawXAxis();
+      drawBars();
+    })
+    .on("mouseup", d => {
+      if (state.hover.date > state.startDate) {
+        state.endDate = state.hover.date;
+      } else {
+        state.endDate = state.startDate;
+        state.startDate = state.hover.date;
+      }
+      state.editingSelection = false;
+      drawXAxis();
+      drawBars();
+      drawPoints();
+    })
+    .on("mouseleave", () => {
+      state.hover.date = null;
+    });
+  barChart.append("g").attr("id", "barAxis");
+  drawXAxis();
+  drawBars();
 }
-
-function calculateStroke() {
-  return "white";
-}
-
-function calculateDelay(d) {
-  return 50;
-}
-
-function recalculateHoverState() {}
-
-function populateDropdown() {}
-
-function updateTooltip() {}
-
 function drawPointsInSequence() {
   state.playInterval = setInterval(() => {
     if (state.currentDate >= state.endDate)
@@ -205,74 +269,74 @@ function drawPointsInSequence() {
     state.currentDate = new Date(+state.currentDate + sevenDays);
 
     drawPoints(true);
-  }, 400);
+  }, 100);
 }
-
-function inSequenceEntrance(enter) {
-  enter
-    .transition()
-    .delay(d => {
-      let delay = (d.publishDate / 100000000 - 9400) * 20;
-      return delay;
-    })
-    .duration(100)
-    .attr("opacity", 1)
-    .attr("r", 10)
-    .transition()
-    .duration(100)
-    .attr("r", 3)
-    .transition()
-    .attr("opacity", 0.2)
-    .attr("", d => {
-      week.text(d.publishDate);
-    })
-    .transition()
-    .attr("fill", "steelblue");
-}
-
-function basicEntrance() {}
 
 function drawPoints(inSequence = false) {
-  const filteredData = state.articles.filter(
-    d => d.publishDate <= state.currentDate
-  );
+  const filteredData = state.articles.filter(d => {
+    return d.publishDate >= state.startDate && d.publishDate <= state.endDate;
+  });
 
   svg
     .selectAll("circle")
     .data(filteredData, d => {
       return d.index;
     })
-    .join(
-      enter => {
-        enter
-          .append("circle")
-          .attr("r", 3)
-          .attr("opacity", inSequence ? 0 : 0.1)
-          .attr("transform", d => {
-            let coordinates;
-            let loc = state.locations.get(d.location);
-            const offset1 = Math.random();
-            const offset2 = Math.random();
+    .join(enter => {
+      enter
+        .append("circle")
+        .attr("r", 3)
+        .attr("opacity", 0)
+        // .attr("opacity", 0.3)
+        .attr("transform", d => {
+          let coordinates;
+          let loc = state.locations.get(d.location);
 
-            if (!loc) {
-              x = ((d.index % 100) / 100) * mapWidth;
-              y = ((d.index - (d.index % 100)) / 5000) * height;
-              coordinates = [mapWidth + x, y];
-            } else {
-              coordinates = projection([
-                -loc.longitude + offset1 * 0.002,
-                loc.latitude + offset2 * 0.002
-              ]);
-            }
-            if (!coordinates) return;
-            return `translate(${coordinates[0]}, ${coordinates[1]})`;
-          })
-          .on("mouseenter", d => {
-            console.log(d.column);
-          })
-          .call(inSequence ? inSequenceEntrance : () => {});
-      },
-      update => {},
-      exit => {}
-    );
+          if (!loc) {
+            const { PI, cos, random, sin } = Math;
+            const t = 2 * PI * random();
+            const u = random() + random();
+            const r = (u > 1 ? 2 - u : u) * 100;
+            const [x, y] = [r * cos(t), r * sin(t)];
+            coordinates = [mapWidth + x, height * 0.7 + y];
+          } else {
+            coordinates = projection([
+              -loc.longitude + Math.random() * 0.002,
+              loc.latitude + Math.random() * 0.002
+            ]);
+          }
+          if (!coordinates) return;
+          return `translate(${coordinates[0]}, ${coordinates[1]})`;
+        })
+        .on("mouseenter", d => {
+          console.log(d.column);
+        })
+        .call(
+          inSequence
+            ? enter =>
+                enter
+                  .transition()
+                  .duration(state.playMode ? 100 : 0)
+                  .attr("opacity", 1)
+                  .attr("r", 10)
+                  .transition()
+                  .duration(state.playMode ? 100 : 0)
+                  .attr("r", 3)
+                  .transition()
+                  .attr("opacity", 0.2)
+                  .attr("", d => {
+                    week.text(d.publishDate);
+                  })
+                  .transition()
+                  .attr("fill", theme.mainColor)
+            : enter =>
+                enter
+                  .attr("fill", theme.mainColor)
+                  .transition()
+                  .duration(400)
+                  .attr("opacity", d =>
+                    Math.max(0.3, Math.pow(5 / filteredData.length, 0.3))
+                  )
+        );
+    });
 }
