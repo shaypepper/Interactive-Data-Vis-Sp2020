@@ -14,10 +14,31 @@ select {
 
 * {
   font-family: Helvetica, Arial, sans-serif;
-  color: yellow;
+  color: #ff6361;
 }
 
 body {
   font-size: 14px;
   background-color: rgba(0, 0, 0, 0.9);
+}
+
+.section {
+  padding: 0 15px;
+  border: black 1px solid;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 2em 5vw;
+  width: 90vw;
+  border-radius: 5px;
+}
+
+#tooltip {
+  position: fixed;
+  top: calc(20em + 150px);
+  right: 15vw;
+  width: 25vw;
+}
+
+#tooltip span {
+  font-style: italic;
+  font-size: 0.8em;
 }

@@ -3,7 +3,7 @@
  * */
 const width = window.innerWidth * 0.9,
   mapWidth = width / 2,
-  height = window.innerHeight * 0.8,
+  height = window.innerHeight * 0.7,
   margin = {
     top: 20,
     bottom: 50,
@@ -12,7 +12,7 @@ const width = window.innerWidth * 0.9,
   },
   sevenDays = 604800000,
   theme = {
-    mainColor: "yellow"
+    mainColor: "#ff6361"
   };
 
 /** these variables allow us to access anything we manipulate in
@@ -29,7 +29,8 @@ let svg,
   totalEvents,
   playButton,
   drawXAxis,
-  drawBars;
+  drawBars,
+  tooltip;
 
 /**
  * APPLICATION STATE
@@ -130,6 +131,8 @@ function init() {
   });
 
   week = d3.select("#week");
+
+  tooltip = d3.select("#tooltip");
 
   // DRAW PLAY BUTTON
 
@@ -298,7 +301,7 @@ function drawPoints(inSequence = false) {
             const u = random() + random();
             const r = (u > 1 ? 2 - u : u) * 100;
             const [x, y] = [r * cos(t), r * sin(t)];
-            coordinates = [mapWidth + x, height * 0.7 + y];
+            coordinates = [mapWidth + x - 120, height * 0.7 + y];
           } else {
             coordinates = projection([
               -loc.longitude + Math.random() * 0.002,
@@ -309,7 +312,21 @@ function drawPoints(inSequence = false) {
           return `translate(${coordinates[0]}, ${coordinates[1]})`;
         })
         .on("mouseenter", d => {
-          console.log(d.column);
+          const monthParser = d3.timeFormat("%m");
+          const publishDate = d3.timeParse("%Y-%m-%d")(d.publishDate);
+          const publishYear = +d3.timeFormat("%Y")(publishDate);
+          const eventDate = d3.timeParse("%b %d %Y")(
+            `${d.eventDate} ${publishYear}`
+          );
+          const eventYear =
+            monthParser(publishDate) === "01" && monthParser(eventDate) === "12"
+              ? publishYear - 1
+              : publishYear;
+          tooltip.html(
+            `<h3>${d3.timeFormat("%A %B %d, %Y")(eventDate)}</h3>
+            <p>${d.column}<p>
+            <span>Published ${d3.timeFormat("%B %d")(publishDate)}</span>`
+          );
         })
         .call(
           inSequence
